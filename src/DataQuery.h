@@ -67,6 +67,9 @@ class DataQuery_t {
         std::vector<Field_t> fields;
         std::vector<Record_t> records;
 
+        std::vector<Field_t>* getFields() {return &fields;}
+        std::vector<Record_t>* getRecords() {return &records;}
+
 };
 
 #endif
