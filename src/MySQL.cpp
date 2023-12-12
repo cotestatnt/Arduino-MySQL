@@ -108,8 +108,7 @@ bool MySQL::connected() {
  * @return true recieved and stores MySQL packet
  * @return false nothing to read or MySQL packet corrupted
  */
-bool MySQL::recieve(void)
-{
+bool MySQL::recieve(void) {
 
     // Number of bytes recieved over TCP socket
     int recv_len = 0;
@@ -125,8 +124,7 @@ bool MySQL::recieve(void)
      */
     recv_len = this->client->readBytes(tcp_socket_buffer, 4);
 
-    if (recv_len == 4)
-    {
+    if (recv_len == 4) {
         // Class containing packet header and payload
         MySQL_Packet *packet  = new MySQL_Packet();
 
@@ -136,10 +134,9 @@ bool MySQL::recieve(void)
         // Fourth byte is the sequence ID
         packet->mPacketNumber = readFixedLengthInt(tcp_socket_buffer, 3, 1);
 
-        // Serial.printf("Packet #%d, length %d bytes\n", packet->mPacketNumber, packet->mPayloadLength);
+        Serial.printf("Packet #%d, length %d bytes\n", packet->mPacketNumber, packet->mPayloadLength);
 
-        if (packet->mPayloadLength <= BUFF_SIZE)
-        {
+        if (packet->mPayloadLength <= BUFF_SIZE) {
             memset(tcp_socket_buffer, 0, BUFF_SIZE);
 
             /**
@@ -149,8 +146,7 @@ bool MySQL::recieve(void)
              */
             recv_len = this->client->readBytes(tcp_socket_buffer, packet->mPayloadLength);
 
-            if (recv_len == (int)(packet->mPayloadLength))
-            {
+            if (recv_len == (int)(packet->mPayloadLength)) {
                 packet->mPayload = (uint8_t *)calloc((size_t)(packet->mPayloadLength), sizeof(uint8_t));
                 memcpy(packet->mPayload, tcp_socket_buffer, (size_t)(packet->mPayloadLength));
                 this->mPacketsRecieved.push_back(packet);
@@ -168,8 +164,7 @@ bool MySQL::recieve(void)
  * @param len
  * @return int
  */
-uint16_t MySQL::write(char *message, uint16_t len)
-{
+uint16_t MySQL::write(char *message, uint16_t len) {
     //Send raw data to socket
     return client->write((const uint8_t *)message, len);
 }
@@ -180,8 +175,7 @@ uint16_t MySQL::write(char *message, uint16_t len)
  * @param pQuery Query
  * @return bool state
  */
-bool MySQL::query(DataQuery_t & dataquery, const char *pQuery)
-{
+bool MySQL::query(DataQuery_t & dataquery, const char *pQuery) {
 
     uint16_t tcp_socket_write_size = 0;
     memset(tcp_socket_buffer, 0, BUFF_SIZE);
@@ -196,8 +190,7 @@ bool MySQL::query(DataQuery_t & dataquery, const char *pQuery)
     int packet_len = payload_len + 4;
 
     // Check if query is sendable over TCP socket by checking final size
-    if (packet_len <= BUFF_SIZE)
-    {
+    if (packet_len <= BUFF_SIZE) {
         /**
          * Now that we are sure user did not sent
          * a query too big for TCP socket we can
@@ -228,8 +221,7 @@ bool MySQL::query(DataQuery_t & dataquery, const char *pQuery)
         tcp_socket_write_size = this->write((char *)tcp_socket_buffer, packet_len);
 
         // Check if TCP socket managed to send packet
-        if (tcp_socket_write_size == packet_len)
-        {
+        if (tcp_socket_write_size == packet_len) {
             /**
              * Query completely sent over TCP
              * socket to server, we now have to :
@@ -260,8 +252,7 @@ bool MySQL::query(DataQuery_t & dataquery, const char *pQuery)
             // Recieve one packet
             tcp_packet_status = this->recieve();
 
-            if (tcp_packet_status)
-            {
+            if (tcp_packet_status) {
                 /**
                  * Packet has been recieved entirely.
                  * we must check if first byte of
@@ -272,21 +263,18 @@ bool MySQL::query(DataQuery_t & dataquery, const char *pQuery)
                  */
                 type = this->mPacketsRecieved.at(0)->getPacketType();
 
-                if (type == PACKET_TEXTRESULTSET)
-                {
+                if (type == PACKET_TEXTRESULTSET) {
                     /**
                      * We must follow the TextResultSet pattern
                      * Source : https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-ProtocolText::Resultset
                      */
 
                     // Fields
-                    while (tcp_packet_status && (type != PACKET_EOF))
-                    {
+                    while (tcp_packet_status && (type != PACKET_EOF)) {
                         // Recieve one MySQL packet over TCP socket
                         tcp_packet_status = this->recieve();
 
-                        if (tcp_packet_status)
-                        {
+                        if (tcp_packet_status) {
                             // Get the last packet type
                             type = this->mPacketsRecieved.at(this->mPacketsRecieved.size() - 1)->getPacketType();
                         }
@@ -296,27 +284,23 @@ bool MySQL::query(DataQuery_t & dataquery, const char *pQuery)
                     type = PACKET_UNKNOWN;
 
                     // Rows
-                    while (tcp_packet_status && (type != PACKET_EOF) && (type != PACKET_ERR))
-                    {
+                    while (tcp_packet_status && (type != PACKET_EOF) && (type != PACKET_ERR)) {
                         // Recieve one MySQL packet over TCP socket
                         tcp_packet_status = this->recieve();
 
-                        if (tcp_packet_status)
-                        {
+                        if (tcp_packet_status) {
                             // Get the last packet type
                             type = this->mPacketsRecieved.at(this->mPacketsRecieved.size() - 1)->getPacketType();
                         }
                     }
 
-                    if (tcp_packet_status)
-                    {
+                    if (tcp_packet_status) {
                         return this->parse_textresultset(&dataquery);
                     }
                     this->free_recieved_packets();
                     return false;
                 }
-                else if (type == PACKET_ERR)
-                {
+                else if (type == PACKET_ERR) {
                     this->parse_error_packet(
                         this->mPacketsRecieved.at(this->mPacketsRecieved.size() - 1),
                         this->mPacketsRecieved.at(this->mPacketsRecieved.size() - 1)->getPacketLength()
@@ -337,12 +321,10 @@ bool MySQL::query(DataQuery_t & dataquery, const char *pQuery)
  * @brief Free packets vector content and empties it
  *
  */
-void MySQL::free_recieved_packets(void)
+void MySQL::free_recieved_packets(void) 
 {
-    if (this->mPacketsRecieved.size() > 0)
-    {
-        for (size_t i = 0; i < this->mPacketsRecieved.size(); i++)
-        {
+    if (this->mPacketsRecieved.size() > 0) {
+        for (size_t i = 0; i < this->mPacketsRecieved.size(); i++)  {
             delete this->mPacketsRecieved.at(i);
         }
         this->mPacketsRecieved.clear();
