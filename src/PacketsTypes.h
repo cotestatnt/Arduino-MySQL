@@ -44,13 +44,13 @@ public:
     {
         this->mPayloadLength = 0;
         this->mPacketNumber = 0;
-        this->mPayload = NULL;
+        this->mPayload = nullptr;
     }
 
     ~MySQL_Packet()
     {
         free(this->mPayload);
-        this->mPayload = NULL;
+        this->mPayload = nullptr;
         this->mPayloadLength = 0;
         this->mPacketNumber = 0;
     }
@@ -64,7 +64,7 @@ public:
 
     uint32_t mPacketNumber = 0;
     uint32_t mPayloadLength = 0;
-    uint8_t *mPayload = NULL;
+    uint8_t *mPayload = nullptr;
 };
 
 #endif

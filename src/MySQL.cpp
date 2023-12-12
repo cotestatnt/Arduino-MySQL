@@ -69,7 +69,8 @@ bool MySQL::connect(const char *user, const char *password, const char* db)
     connected = (send_authentication_packet(user, password, db) > 0) ? true : false;
 
     Serial.print(CONNECTED);
-    Serial.println(server_version);
+    Serial.print(server_version);
+    Serial.print("\n");
 
     return connected;
 }
@@ -360,7 +361,7 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
     // Used to keep track of the actual packet
     int packet_offset = 0;
     Packet_Type packet_type = PACKET_OK;
-    const uint8_t *packet = NULL;
+    const uint8_t *packet = nullptr;
 
     packet = this->mPacketsRecieved.at(packet_offset)->mPayload;
     packet_type = this->mPacketsRecieved.at(packet_offset)->getPacketType();
@@ -470,11 +471,12 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
 void MySQL::parse_error_packet(const MySQL_Packet *packet, uint16_t packet_len )
 {
     char SQL_state[6];
-    Serial.println("************** SQL Error *****************");
+    Serial.print("************** SQL Error *****************\n");
     memcpy(SQL_state, packet->mPayload + 4, 5);
     SQL_state[5] = '\0';
     Serial.print("SQLSTATE = ");
-    Serial.println(SQL_state);
+    Serial.print(SQL_state);
+    Serial.print("\n");
     for (int i = 9; i < packet_len-4; i++) {
         char ch = (char)packet->mPayload[i];
         if (ch != '\0')
@@ -482,7 +484,7 @@ void MySQL::parse_error_packet(const MySQL_Packet *packet, uint16_t packet_len )
          else
             continue;
     }
-    Serial.println("\n******************************************\n");
+    Serial.print("\n******************************************\n\n");
     // printRawBytes(packet->mPayload, packet_len);
 }
 
@@ -501,7 +503,7 @@ void MySQL::printHeading(std::vector<Field_t> &fields) {
         int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
         Serial.printf("+%s", (char*)memset(sep, '-', len +2));
     }
-    Serial.println("+");
+    Serial.print("+\n");
 
     // Print fields name
     for (Field_t field : fields) {
@@ -509,7 +511,7 @@ void MySQL::printHeading(std::vector<Field_t> &fields) {
         int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
         Serial.printf("| %*s ", len, field.name.c_str());
     }
-    Serial.println("|");
+    Serial.print("|\n");
 
     // Print a row separator again
     for (Field_t field : fields) {
@@ -517,7 +519,7 @@ void MySQL::printHeading(std::vector<Field_t> &fields) {
         int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
         Serial.printf("+%s", (char*)memset(sep, '-', len +2));
     }
-    Serial.println("+");
+    Serial.print("+\n");
 }
 
 
@@ -541,7 +543,7 @@ void MySQL::printResult(DataQuery_t & database)
             Serial.printf("| %*s ", len, value.c_str());
             i++;
         }
-        Serial.println("|");
+        Serial.print("|\n");
     }
 
     // Print last row separator
@@ -550,7 +552,7 @@ void MySQL::printResult(DataQuery_t & database)
         int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : field.size;
         Serial.printf("+%s", (char*)memset(sep, '-', len +2));
     }
-    Serial.println("+");
+    Serial.print("+\n");
 }
 
 
@@ -712,7 +714,7 @@ int MySQL::send_authentication_packet(const char *user, const char *password, co
  */
 void MySQL::flush_packet()
 {
-    uint8_t *data_rec = NULL;
+    uint8_t *data_rec = nullptr;
     int packet_len = 0;
 
     data_rec = (uint8_t *)malloc(BUFF_SIZE);

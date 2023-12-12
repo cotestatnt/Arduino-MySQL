@@ -87,18 +87,18 @@ public:
 
 private:
     // User-configured TCP socket attached to NetworkInterface
-    Client *client = NULL;
+    Client *client = nullptr;
 
-    char* server_version = NULL;
+    char* server_version = nullptr;
 
     // Class containing packet header and payload
-    MySQL_Packet *packet = NULL;
+    MySQL_Packet *packet = nullptr;
 
     // Fixed-Size buffer for raw data from TCP socket
     uint8_t tcp_socket_buffer[BUFF_SIZE] = {0};
 
     // MySQL Server IP
-    const char *mServerIP = NULL;
+    const char *mServerIP = nullptr;
     uint16_t mPort = 3306;
 
     // MySQL packets parsed from mBuffer
