@@ -62,9 +62,6 @@ class DataQuery_t {
             return nullptr;
         }
 
-        std::vector<Field_t>* getFields() {return &fields;}
-        std::vector<Record_t>* getRecords() {return &records;}
-
         uint16_t fieldCount = 0;
         uint16_t recordCount = 0;
         std::vector<Field_t> fields;

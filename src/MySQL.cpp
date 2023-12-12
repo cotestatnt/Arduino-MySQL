@@ -420,20 +420,15 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
             // Get row values
             Record_t newRecord;
             for (int col = 0; col < database->fieldCount; col++) {
-                std::string value;
-                int str_size = readLenEncInt(packet, str_offset);
-                if (str_size) {
-                    readLenEncString(value, packet, str_offset);
-                }
-                else {
-                    value = "";
-                }
-
-                str_offset += str_size + 1;
+                int str_size = readLenEncInt(packet, str_offset);               // Get string length
+                char * value = (char*)malloc((str_size + 1) * sizeof(char));    // Allocate enougth memory
+                readLenEncString(value, packet, str_offset);                    // Get te text 
+                free(value);                                                    // Free memory
                 #if DEBUG
-                    Serial.printf("Field value :%s, length %d\n", value.c_str(), str_size);
+                    Serial.printf("Offset 0x%02X - Field value :%s, length %d\n", str_offset, value, str_size);
                 #endif
-                newRecord.record.push_back(value);
+                str_offset += str_size + 1;
+                newRecord.record.push_back(std::string(value));
             }
             database->records.push_back(newRecord);
             // Increment offset
@@ -535,7 +530,7 @@ void MySQL::printResult(DataQuery_t & database)
             int len = (database.fields.at(i).size > MAX_PRINT_LEN || database.fields.at(i).size == 0)
                 ? MAX_PRINT_LEN : database.fields.at(i).size;
 
-            if (!value.length())  value = " ";
+            if (!value.length()) value = " ";
             if (value.size() > MAX_PRINT_LEN) {
                 value.resize(MAX_PRINT_LEN);
                 value.replace(value.size()-3, 3, "...");
