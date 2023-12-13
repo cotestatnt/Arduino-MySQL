@@ -1,24 +1,31 @@
 /**
  * @file MySQL.h
  * @author Cotesta Tolentino (cotestatnt@yahoo.com)
- * @brief ESP32-MySQL library using Arduino framework
- * @version 2.0
+ * @brief Arduino MySQL client library
+ * @version 1.0.1
  * @date 09/12/2023
  */
 
 #ifndef MYSQL_H
 #define MYSQL_H
 
-#include <iostream>
-#include <vector>
-#include <string>
+#include <stdarg.h>
 #include <Arduino.h>
-#include <WiFi.h>
+#include <Client.h>
 
 #include "SHA1.h"
 #include "PacketsTypes.h"
 #include "SQLVarTypes.h"
 #include "DataQuery.h"
+
+
+#if defined(__AVR__)
+ #include <ArduinoSTL.h>
+#else
+#include <cstdint>
+#include <vector>
+#endif
+
 
 #define DEBUG 0
 #define MAX_PRINT_LEN 32
@@ -29,7 +36,11 @@ const char DISCONNECTED[] PROGMEM = "Disconnected.";
 /**
  * @brief Used to send data over TCP socket.
  */
+#if defined(ESP32)
 #define  BUFF_SIZE (2 * CONFIG_LWIP_TCP_MSS)
+#else
+#define  BUFF_SIZE (1024)
+#endif
 
 
 class MySQL
@@ -117,13 +128,26 @@ private:
     void flush_packet(void);
     void parse_error_packet(const MySQL_Packet *packet, uint16_t packet_len);
 
+    // Variadic function that will execute the query selected with passed parameters
+    void printf_n(size_t n, const char* fmt, ...) {
+        char buf[n];
+        va_list args;
+        va_start (args, fmt);
+        vsnprintf (buf, sizeof(buf), fmt, args);
+        va_end (args);
+        Serial.print(buf);
+    }
+
 #if DEBUG
     void print_packets_types(void);
 
     void printRawBytes(const uint8_t* data, size_t len) {
-        Serial.printf("Packet length: %d\n", len);
+        char buf[16];
+        snprintf(buf, 16, "Packet length: %d\n", len);
+        Serial.print(buf);
         for(int i =0; i<len; i++) {
-            Serial.printf( "%02X ", data[i]);
+            snprintf(buf, 16, "%02X ", data[i]);
+            Serial.print(buf);
             if ((i+1) % 50 == 0) Serial.println();
         }
         Serial.println("\n");

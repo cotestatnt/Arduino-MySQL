@@ -70,20 +70,6 @@ void readLenEncString(char *pString, const uint8_t *packet, int offset)
   pString[str_size] = '\0';
 }
 
-void readLenEncString(std::string &pString, const uint8_t *packet, int offset)
-{
-  int str_size = readLenEncInt(packet, offset);
-
-  if (packet[offset] < 251)
-    pString.assign((const char*)packet, offset + 1, str_size);
-  else if (packet[offset] == 0xFC)
-    pString.assign((const char*)packet, offset + 3, str_size);
-  else if (packet[offset] == 0xFD)
-    pString.assign((const char*)packet, offset + 4, str_size);
-  else if (packet[offset] == 0xFE)
-    pString.assign((const char*)packet, offset + 9, str_size);
-  pString[str_size] = '\0';
-}
 
 /**
  * @brief Store

@@ -24,17 +24,17 @@
 #ifndef _SHA1_H_
 #define _SHA1_H_
 
-#include <cstdint>
-/* 
+
+/*
  *  This structure will hold context information for the hashing
  *  operation
  */
 typedef struct SHA1Context
 {
-    uint32_t Message_Digest[5]; /* Message Digest (output)          */
+    unsigned long Message_Digest[5]; /* Message Digest (output)          */
 
-    uint32_t Length_Low;        /* Message length in bits           */
-    uint32_t Length_High;       /* Message length in bits           */
+    unsigned long Length_Low;        /* Message length in bits           */
+    unsigned long Length_High;       /* Message length in bits           */
 
     unsigned char Message_Block[64]; /* 512-bit message blocks      */
     int Message_Block_Index;    /* Index into message block array   */
@@ -48,8 +48,6 @@ typedef struct SHA1Context
  */
 void SHA1Reset(SHA1Context *);
 int SHA1Result(SHA1Context *);
-void SHA1Input( SHA1Context *,
-                const unsigned char *,
-                unsigned);
+void SHA1Input( SHA1Context *, const unsigned char *, unsigned);
 
 #endif

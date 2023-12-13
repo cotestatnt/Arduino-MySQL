@@ -1,15 +1,21 @@
+
+#if defined(__AVR__)
+ #include <ArduinoSTL.h>
+#else
+#include <cstdint>
 #include <vector>
+#endif
 
 #ifndef DATAQUERY_H
 #define DATAQUERY_H
 
 typedef struct {
-    std::string name;
+    String name;
     uint32_t    size;
 } Field_t;
 
 typedef struct {
-    std::vector<std::string> record;
+    std::vector<String> record;
 } Record_t;
 
 class DataQuery_t {
@@ -31,8 +37,8 @@ class DataQuery_t {
         const char* getRowValue(int row, const char* fieldName) {
             int index = 0;
             for (Field_t field : fields) {
-                if (field.name.compare(fieldName) == 0) {
-                    if (records.at(row).record.at(index).size())
+                if (field.name.equals(fieldName)) {
+                    if (records.at(row).record.at(index).length())
                         return records.at(row).record.at(index).c_str();
                     else
                         return "\0";
@@ -44,7 +50,7 @@ class DataQuery_t {
 
         const char* getRowValue(int row, int col) {
             if (row <= recordCount && col <= fieldCount) {
-                if (records.at(row).record.at(col).size())
+                if (records.at(row).record.at(col).length())
                     return records.at(row).record.at(col).c_str();
                 else
                     return "\0";

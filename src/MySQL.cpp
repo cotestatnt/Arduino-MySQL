@@ -134,7 +134,7 @@ bool MySQL::recieve(void) {
         // Fourth byte is the sequence ID
         packet->mPacketNumber = readFixedLengthInt(tcp_socket_buffer, 3, 1);
 
-        Serial.printf("Packet #%d, length %d bytes\n", packet->mPacketNumber, packet->mPayloadLength);
+        // Serial.printf("Packet #%d, length %d bytes\n", packet->mPacketNumber, packet->mPayloadLength);
 
         if (packet->mPayloadLength <= BUFF_SIZE) {
             memset(tcp_socket_buffer, 0, BUFF_SIZE);
@@ -321,7 +321,7 @@ bool MySQL::query(DataQuery_t & dataquery, const char *pQuery) {
  * @brief Free packets vector content and empties it
  *
  */
-void MySQL::free_recieved_packets(void) 
+void MySQL::free_recieved_packets(void)
 {
     if (this->mPacketsRecieved.size() > 0) {
         for (size_t i = 0; i < this->mPacketsRecieved.size(); i++)  {
@@ -374,12 +374,15 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
         }
 
         str_len = readLenEncInt(packet, offset);
+        char * field_name = (char*)malloc((str_len + 1) * sizeof(char));    // Allocate enougth memory
+        readLenEncString(field_name, packet, offset);                        // Get te text
         Field_t field;
-        readLenEncString(field.name, packet, offset);
+        field.name = field_name;
         field.size = readFixedLengthInt(packet, offset + field.name.length() + 4, 4);
         #if DEBUG
-            Serial.printf("Field %s, length %d\n", field.name.c_str(), field.size);
+            this->printf_n(64, "Field %s, length %d\n", field.name.c_str(), field.size);
         #endif
+        free(field_name);    // Free memory
         database->fields.push_back(field);
     }
 
@@ -403,16 +406,17 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
             Record_t newRecord;
             for (int col = 0; col < database->fieldCount; col++) {
                 int str_size = readLenEncInt(packet, str_offset);               // Get string length
-                char * value = (char*)malloc((str_size + 1) * sizeof(char));    // Allocate enougth memory
-                readLenEncString(value, packet, str_offset);                    // Get te text 
-                free(value);                                                    // Free memory
+                char * value = (char*)malloc((str_size + 2) * sizeof(char));    // Allocate enougth memory
+                readLenEncString(value, packet, str_offset);                    // Get te text
                 #if DEBUG
-                    Serial.printf("Offset 0x%02X - Field value :%s, length %d\n", str_offset, value, str_size);
+                    this->printf_n(128, "Offset 0x%02X - Field value: %s, length %d\n", str_offset, value, str_size);
                 #endif
                 str_offset += str_size + 1;
-                newRecord.record.push_back(std::string(value));
+                newRecord.record.push_back(value);
+                free(value);    // Free memory
             }
             database->records.push_back(newRecord);
+
             // Increment offset
             packet_offset++;
             packet = this->mPacketsRecieved.at(packet_offset)->mPayload;
@@ -471,30 +475,101 @@ void MySQL::parse_error_packet(const MySQL_Packet *packet, uint16_t packet_len )
  */
 
 
+// void MySQL::printHeading(std::vector<Field_t> &fields) {
+//     char sep[MAX_PRINT_LEN+3] = { 0 };
+//     char buf[fields.size() * (MAX_PRINT_LEN+3)];
+
+//     // Print a row separator
+//     for (Field_t field : fields) {
+//         memset(sep, 0, MAX_PRINT_LEN);
+//         int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+//         sprintf(buf, "+%s", (char*)memset(sep, '-', len +2));
+//         Serial.print(buf);
+//     }
+//     Serial.print("+\n");
+
+//     // Print fields name
+//     for (Field_t field : fields) {
+//         memset(sep, 0, MAX_PRINT_LEN);
+//         int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+//         sprintf(buf,"| %*s ", len, field.name.c_str());
+//         Serial.print(buf);
+//     }
+//     Serial.print("|\n");
+
+//     // Print a row separator again
+//     for (Field_t field : fields) {
+//         memset(sep, 0, MAX_PRINT_LEN);
+//         int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+//         sprintf(buf, "+%s", (char*)memset(sep, '-', len +2));
+//         Serial.print(buf);
+//     }
+//     Serial.print("+\n");
+// }
+
+
+
+// void MySQL::printResult(DataQuery_t & database)
+// {
+//     printHeading(database.fields);
+//     char buf[database.fields.size() * (MAX_PRINT_LEN+3)];
+
+//     // Print records values
+//     for (Record_t rec : database.records) {
+//         int i = 0;
+//         for (String value: rec.record) {
+//             int len = (database.fields.at(i).size > MAX_PRINT_LEN || database.fields.at(i).size == 0)
+//                 ? MAX_PRINT_LEN : database.fields.at(i).size;
+
+//             if (!value.length()) value = " ";
+//             if (value.length() > MAX_PRINT_LEN) {
+//                 value = value.substring(0, MAX_PRINT_LEN);
+//                 value.replace(value.substring(MAX_PRINT_LEN-3, MAX_PRINT_LEN), "...");
+//             }
+//             sprintf(buf,"| %*s ", len, value.c_str());
+//             Serial.print(buf);
+//             i++;
+//         }
+//         Serial.print("|\n");
+//     }
+
+//     // Print last row separator
+//     for (Field_t field : database.fields) {
+//         char sep[MAX_PRINT_LEN+3] = { 0 };
+//         int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : field.size;
+//         sprintf(buf, "+%s", (char*)memset(sep, '-', len +2));
+//         Serial.print(buf);
+//     }
+//     Serial.print("+\n");
+// }
+
+
 void MySQL::printHeading(std::vector<Field_t> &fields) {
-    char sep[MAX_PRINT_LEN+3] = { 0 };
+    char sep[MAX_PRINT_LEN + 3] = { 0 };
+    const int printfLen = MAX_PRINT_LEN + 4;
+    int str_len;
 
     // Print a row separator
     for (Field_t field : fields) {
         memset(sep, 0, MAX_PRINT_LEN);
-        int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
-        Serial.printf("+%s", (char*)memset(sep, '-', len +2));
+        str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+        this->printf_n(printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
     }
     Serial.print("+\n");
 
     // Print fields name
     for (Field_t field : fields) {
         memset(sep, 0, MAX_PRINT_LEN);
-        int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
-        Serial.printf("| %*s ", len, field.name.c_str());
+        str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+        this->printf_n(printfLen, "| %*s ", str_len, field.name.c_str());
     }
     Serial.print("|\n");
 
     // Print a row separator again
     for (Field_t field : fields) {
         memset(sep, 0, MAX_PRINT_LEN);
-        int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
-        Serial.printf("+%s", (char*)memset(sep, '-', len +2));
+        str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+        this->printf_n(printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
     }
     Serial.print("+\n");
 }
@@ -504,20 +579,23 @@ void MySQL::printHeading(std::vector<Field_t> &fields) {
 void MySQL::printResult(DataQuery_t & database)
 {
     printHeading(database.fields);
+    int printfLen = MAX_PRINT_LEN + 4;
+    int str_len;
 
     // Print records values
     for (Record_t rec : database.records) {
         int i = 0;
-        for (std::string value: rec.record) {
-            int len = (database.fields.at(i).size > MAX_PRINT_LEN || database.fields.at(i).size == 0)
+        for (String value: rec.record) {
+            str_len = (database.fields.at(i).size > MAX_PRINT_LEN || database.fields.at(i).size == 0)
                 ? MAX_PRINT_LEN : database.fields.at(i).size;
 
-            if (!value.length()) value = " ";
-            if (value.size() > MAX_PRINT_LEN) {
-                value.resize(MAX_PRINT_LEN);
-                value.replace(value.size()-3, 3, "...");
+            if (!value.length())
+                value = " ";
+            if (value.length() > MAX_PRINT_LEN) {
+                value = value.substring(0, MAX_PRINT_LEN);
+                value.replace(value.substring(MAX_PRINT_LEN-3, MAX_PRINT_LEN), "...");
             }
-            Serial.printf("| %*s ", len, value.c_str());
+            this->printf_n(printfLen + 1, "| %*s ", str_len, value.c_str());
             i++;
         }
         Serial.print("|\n");
@@ -526,12 +604,11 @@ void MySQL::printResult(DataQuery_t & database)
     // Print last row separator
     for (Field_t field : database.fields) {
         char sep[MAX_PRINT_LEN+3] = { 0 };
-        int len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : field.size;
-        Serial.printf("+%s", (char*)memset(sep, '-', len +2));
+        str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : field.size;
+        this->printf_n(printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
     }
     Serial.print("+\n");
 }
-
 
 /**
  * @brief Hash password using server seed
@@ -769,7 +846,7 @@ void MySQL::print_packets_types(void)
             type = "ERR";
             break;
         }
-        Serial.printf("Packet %d is a %s packet\r\n", packet_number, type.c_str());
+        // Serial.printf("Packet %d is a %s packet\r\n", packet_number, type.c_str());
     }
 }
 #endif
