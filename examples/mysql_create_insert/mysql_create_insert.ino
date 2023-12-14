@@ -1,4 +1,9 @@
-#include <WiFi.h>
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>
+#else
+ #include <WiFi.h>
+#endif
+
 #include <MySQL.h>
 #include "secrets.h"
 
@@ -6,7 +11,8 @@ WiFiClient client;
 MySQL sql(&client, dbHost, dbPort);
 #define MAX_QUERY_LEN 512
 
-const char* table = "reset_reasons";               // Table name
+const char* table = "reset_reasons";    // Table name
+uint32_t pollTime = 5000;               // Waiting time between one request and the next
 
 
 #if CONFIG_IDF_TARGET_ESP32 // ESP32/PICO-D4
@@ -23,11 +29,9 @@ const char* table = "reset_reasons";               // Table name
 #include "esp32c6/rom/rtc.h"
 #elif CONFIG_IDF_TARGET_ESP32H2
 #include "esp32h2/rom/rtc.h"
-#else 
+#else
 #error Target CONFIG_IDF_TARGET is not supported
 #endif
-
-#define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 
 
 const char* getResetReason(int reason) {
@@ -65,7 +69,20 @@ CREATE TABLE `%s` (
 )string_literal";
 
 static const char insertQuery[] PROGMEM = R"string_literal(
-INSERT INTO `%s` (`MAC address`, `CPU0 reset reason`, `CPU1 reset reason`) VALUES ('%s', '%s', '%s');
+INSERT INTO `%s`
+  (`MAC address`, `CPU0 reset reason`, `CPU1 reset reason`)
+  VALUES ('%s', '%s', '%s');
+)string_literal";
+
+static const char selectQuery[] PROGMEM = R"string_literal(
+SELECT
+  `id` as `Counter`,
+  `MAC address`,
+  `CPU0 reset reason`,
+  `CPU1 reset reason`,
+  timestamp AS `Inserted at`
+  FROM %s
+  ORDER BY id DESC LIMIT 10;
 )string_literal";
 
 
@@ -97,13 +114,11 @@ void setup() {
     Serial.print(".");
   }
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  Serial.println("\nWiFi connected, IP address: ");
   Serial.println(WiFi.localIP());
 
   //Open MySQL session
-  Serial.print("Connecting to... ");
+  Serial.print("Connecting to ");
   Serial.println(dbHost);
 
 	if (sql.connect(user, password, database)) {
@@ -111,7 +126,7 @@ void setup() {
   }
 
   // Create table if not exists
-  Serial.println("\nCreate table if not exists");
+  Serial.println("Create table if not exists");
   DataQuery_t data;
   if (!queryExecute(data, createQuery, table)) {
     Serial.println("CREATE query error. Table already defined");
@@ -126,11 +141,11 @@ void setup() {
   Serial.println(getResetReason(rtc_get_reset_reason(1)));
   Serial.println();
 
-  if (queryExecute( data, insertQuery, table, 
+  if (queryExecute( data, insertQuery, table,
       WiFi.macAddress().c_str(),
       getResetReason(rtc_get_reset_reason(0)),
       getResetReason(rtc_get_reset_reason(1)))
-     ) 
+     )
   {
     Serial.println("INSERT query executed. New record added to table");
   }
@@ -139,18 +154,24 @@ void setup() {
 }
 
 void loop() {
-  // Create a DataQuery_t object for store query results
-  DataQuery_t data;
 
-  // Select last 10 records and print them
-  if (queryExecute(data, "SELECT * FROM %s ORDER BY id DESC LIMIT 10", table)){
-    Serial.println("SELECT query executed.");
-    if (data.recordCount) {
-      // Print formatted content of table
-      sql.printResult(data);
-      Serial.print('\n');
+  static uint32_t qTime;
+  if (millis() - qTime > pollTime) {
+    qTime = millis();
+
+    // Create a DataQuery_t object for store query results
+    DataQuery_t data;
+
+    // Select last 10 records using som alias and print them to Serial
+    if (queryExecute(data, selectQuery, table)) {
+      Serial.println("SELECT query executed.");
+      if (data.recordCount) {
+        // Print formatted content of table
+        sql.printResult(data);
+        Serial.print('\n');
+      }
     }
+    Serial.print('\n');
   }
-  Serial.print('\n');
-  delay(pollTime);
+
 }

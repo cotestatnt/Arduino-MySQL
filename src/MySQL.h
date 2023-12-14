@@ -30,7 +30,7 @@
 #define DEBUG 0
 #define MAX_PRINT_LEN 32
 
-const char CONNECTED[] PROGMEM = "Connected to server version ";
+const char CONNECTED[] PROGMEM = "Connected to MySQL server version ";
 const char DISCONNECTED[] PROGMEM = "Disconnected.";
 
 /**
@@ -142,11 +142,11 @@ private:
     void print_packets_types(void);
 
     void printRawBytes(const uint8_t* data, size_t len) {
-        char buf[16];
-        snprintf(buf, 16, "Packet length: %d\n", len);
+        char buf[32];
+        snprintf(buf, 32, "Packet length: %d\n", len);
         Serial.print(buf);
         for(int i =0; i<len; i++) {
-            snprintf(buf, 16, "%02X ", data[i]);
+            snprintf(buf, 32, "%02X ", data[i]);
             Serial.print(buf);
             if ((i+1) % 50 == 0) Serial.println();
         }

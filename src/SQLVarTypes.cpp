@@ -54,7 +54,7 @@ uint32_t readLenEncInt(const uint8_t *packet, int offset)
  * @param packet Pointer to first char of MySQL Packet
  * @param offset Offset from start pointer to read
  */
-void readLenEncString(char *pString, const uint8_t *packet, int offset)
+int readLenEncString(char *pString, const uint8_t *packet, int offset)
 {
   int str_size = readLenEncInt(packet, offset);
 
@@ -68,6 +68,7 @@ void readLenEncString(char *pString, const uint8_t *packet, int offset)
     memcpy(pString, packet + 9 + offset, str_size);
 
   pString[str_size] = '\0';
+  return str_size;
 }
 
 

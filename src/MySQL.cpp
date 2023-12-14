@@ -367,21 +367,31 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
         int str_len = readLenEncInt(packet, offset);    // def
         offset += str_len + 1;
 
-        // Skip unnecessary infos
-        for (int i =0; i<4; i++) {
-            str_len = readLenEncInt(packet, offset);
-            offset += str_len + 1 ;
+        // Skip database name and table name (we know in advance, no need to parse it)
+        for (int i =0; i<3; i++) {
+            offset += readLenEncInt(packet, offset) + 1 ;
         }
 
+        // Allocate enougth memory and get field name (this can be an alias)
         str_len = readLenEncInt(packet, offset);
-        char * field_name = (char*)malloc((str_len + 1) * sizeof(char));    // Allocate enougth memory
-        readLenEncString(field_name, packet, offset);                        // Get te text
+        char * field_name = (char*)malloc((str_len + 1) * sizeof(char));   
+        offset += 1 + readLenEncString(field_name, packet, offset);     
+        
+        // Create new Field_t field in order to add to std::vector
         Field_t field;
         field.name = field_name;
-        field.size = readFixedLengthInt(packet, offset + field.name.length() + 4, 4);
         #if DEBUG
-            this->printf_n(64, "Field %s, length %d\n", field.name.c_str(), field.size);
+            this->printf_n(64, "next offset %02X, field %s\n", offset, field.name.c_str());
         #endif
+
+        //  Reallocate enougth memory and get the real name of field (NO alias)
+        str_len = readLenEncInt(packet, offset);
+        field_name = (char*)realloc(field_name, (str_len + 1) * sizeof(char));  
+        offset += 1 + readLenEncString(field_name, packet, offset);   
+
+        // Offset for field size (field name length + 3)
+        field.size = readFixedLengthInt(packet, offset + 3, 4);
+
         free(field_name);    // Free memory
         database->fields.push_back(field);
     }
@@ -407,11 +417,10 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
             for (int col = 0; col < database->fieldCount; col++) {
                 int str_size = readLenEncInt(packet, str_offset);               // Get string length
                 char * value = (char*)malloc((str_size + 2) * sizeof(char));    // Allocate enougth memory
-                readLenEncString(value, packet, str_offset);                    // Get te text
+                str_offset += 1 + readLenEncString(value, packet, str_offset);  // Get te text
                 #if DEBUG
-                    this->printf_n(128, "Offset 0x%02X - Field value: %s, length %d\n", str_offset, value, str_size);
+                    this->printf_n(128, "Field value: %s, length %d\n", str_offset, value, str_size);
                 #endif
-                str_offset += str_size + 1;
                 newRecord.record.push_back(value);
                 free(value);    // Free memory
             }
