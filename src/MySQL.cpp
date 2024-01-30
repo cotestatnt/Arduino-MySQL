@@ -374,9 +374,9 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
 
         // Allocate enougth memory and get field name (this can be an alias)
         str_len = readLenEncInt(packet, offset);
-        char * field_name = (char*)malloc((str_len + 1) * sizeof(char));   
-        offset += 1 + readLenEncString(field_name, packet, offset);     
-        
+        char * field_name = (char*)malloc((str_len + 1) * sizeof(char));
+        offset += 1 + readLenEncString(field_name, packet, offset);
+
         // Create new Field_t field in order to add to std::vector
         Field_t field;
         field.name = field_name;
@@ -386,8 +386,8 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
 
         //  Reallocate enougth memory and get the real name of field (NO alias)
         str_len = readLenEncInt(packet, offset);
-        field_name = (char*)realloc(field_name, (str_len + 1) * sizeof(char));  
-        offset += 1 + readLenEncString(field_name, packet, offset);   
+        field_name = (char*)realloc(field_name, (str_len + 1) * sizeof(char));
+        offset += 1 + readLenEncString(field_name, packet, offset);
 
         // Offset for field size (field name length + 3)
         field.size = readFixedLengthInt(packet, offset + 3, 4);
@@ -460,7 +460,7 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
 */
 void MySQL::parse_error_packet(const MySQL_Packet *packet, uint16_t packet_len )
 {
-    char SQL_state[6];
+
     Serial.print("************** SQL Error *****************\n");
     memcpy(SQL_state, packet->mPayload + 4, 5);
     SQL_state[5] = '\0';

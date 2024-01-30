@@ -96,11 +96,23 @@ public:
     void printHeading(std::vector<Field_t> &fields);
     void printResult(DataQuery_t & database);
 
+    const char* getLastSQLSTATE() {
+        return SQL_state;
+    }
+
+    const char* getLastError() {
+        return error_message.c_str();
+    }
+
 private:
     // User-configured TCP socket attached to NetworkInterface
     Client *client = nullptr;
 
     char* server_version = nullptr;
+
+    // Store last SQL state (usefull for error handling)
+    char SQL_state[6];
+    String error_message;
 
     // Class containing packet header and payload
     MySQL_Packet *packet = nullptr;
