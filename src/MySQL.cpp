@@ -467,10 +467,13 @@ void MySQL::parse_error_packet(const MySQL_Packet *packet, uint16_t packet_len )
     Serial.print("SQLSTATE = ");
     Serial.print(SQL_state);
     Serial.print("\n");
+    error_message = "";
     for (int i = 9; i < packet_len-4; i++) {
         char ch = (char)packet->mPayload[i];
-        if (ch != '\0')
+        if (ch != '\0') {
             Serial.print(ch);
+            error_message += ch;
+        }
          else
             continue;
     }
