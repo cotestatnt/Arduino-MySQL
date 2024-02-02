@@ -93,8 +93,72 @@ public:
      * @param Database Database structure to store results
      *
      */
-    void printHeading(std::vector<Field_t> &fields);
-    void printResult(DataQuery_t & database);
+    template <typename TDestination>
+    void printHeading(std::vector<Field_t> &fields, TDestination& destination) {
+        char sep[MAX_PRINT_LEN + 3] = { 0 };
+        const int printfLen = MAX_PRINT_LEN + 4;
+        int str_len;
+
+        // Print a row separator
+        for (Field_t field : fields) {
+            memset(sep, 0, MAX_PRINT_LEN);
+            str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+            this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
+        }
+        destination.print("+\n");
+
+        // Print fields name
+        for (Field_t field : fields) {
+            memset(sep, 0, MAX_PRINT_LEN);
+            str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+            this->printf_n(destination, printfLen, "| %*s ", str_len, field.name.c_str());
+        }
+        destination.print("|\n");
+
+        // Print a row separator again
+        for (Field_t field : fields) {
+            memset(sep, 0, MAX_PRINT_LEN);
+            str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+            this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
+        }
+        destination.print("+\n");
+    }
+
+
+    template <typename TDestination>
+    void printResult(DataQuery_t & database, TDestination& destination)
+    {
+        printHeading(database.fields, destination);
+        int printfLen = MAX_PRINT_LEN + 4;
+        int str_len;
+
+        // Print records values
+        for (Record_t rec : database.records) {
+            int i = 0;
+            for (String value: rec.record) {
+                str_len = (database.fields.at(i).size > MAX_PRINT_LEN || database.fields.at(i).size == 0)
+                    ? MAX_PRINT_LEN : database.fields.at(i).size;
+
+                if (!value.length())
+                    value = " ";
+                if (value.length() > MAX_PRINT_LEN) {
+                    value = value.substring(0, MAX_PRINT_LEN);
+                    value.replace(value.substring(MAX_PRINT_LEN-3, MAX_PRINT_LEN), "...");
+                }
+                this->printf_n(destination, printfLen + 1, "| %*s ", str_len, value.c_str());
+                i++;
+            }
+            destination.print("|\n");
+        }
+
+        // Print last row separator
+        for (Field_t field : database.fields) {
+            char sep[MAX_PRINT_LEN+3] = { 0 };
+            str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : field.size;
+            this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
+        }
+        destination.print("+\n");
+    }
 
     const char* getLastSQLSTATE() {
         return SQL_state;
@@ -141,13 +205,14 @@ private:
     void parse_error_packet(const MySQL_Packet *packet, uint16_t packet_len);
 
     // Variadic function that will execute the query selected with passed parameters
-    void printf_n(size_t n, const char* fmt, ...) {
+    template <typename TDestination>
+    void printf_n(TDestination& destination, size_t n, const char* fmt, ...) {
         char buf[n];
         va_list args;
         va_start (args, fmt);
         vsnprintf (buf, sizeof(buf), fmt, args);
         va_end (args);
-        Serial.print(buf);
+        destination.print(buf);
     }
 
 #if DEBUG
