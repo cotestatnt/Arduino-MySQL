@@ -58,7 +58,7 @@ void loop() {
     Serial.println(F("Query executed."));
     if (data.recordCount) {
       // Print formatted content of table
-      sql.printResult(data);
+      sql.printResult(data, Serial);
       Serial.print('\n');
 
       /*

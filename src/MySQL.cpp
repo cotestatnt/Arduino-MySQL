@@ -26,6 +26,33 @@ MySQL::~MySQL(void)
     this->free_recieved_packets();
 }
 
+
+
+bool MySQL::isValidIPAddress(const char* str) {
+    int num = 0; 
+    int dots = 0; 
+    int len = strlen(str);
+    for (int i = 0; i < len; ++i) {
+        if (str[i] == '.') {
+            if (num > 3 || num == 0 || dots > 2 || i == 0 || i == len - 1)
+                return false;
+            num = 0;
+            dots++;
+        } else if (str[i] >= '0' && str[i] <= '9') {
+            num++;
+            if (num > 3)
+                return false;
+        } else {
+            return false;
+        }
+    }
+    if (num < 1 || num > 3 || dots < 3)
+        return false;
+
+    return true;
+}
+
+
 /**
  * @brief Connect to MySQL under specific session
  *
@@ -40,17 +67,15 @@ bool MySQL::connect(const char *user, const char *password, const char* db)
         return false;
     bool connected = false;
 
-    //Set MySQL server IP
-    IPAddress server;
-    server.fromString(mServerIP);
     int retries = 5;
     // Retry up to MAX_CONNECT_ATTEMPTS times.
     while (retries--) {
-        connected = client->connect(server, 3306);
+        connected = client->connect(mServerIP, 3306);
         if (connected ) {
             break;
         }
         delay(100);
+        Serial.print(".");
     }
 
     if (!connected )
@@ -71,9 +96,9 @@ bool MySQL::connect(const char *user, const char *password, const char* db)
     Serial.print(CONNECTED);
     Serial.print(server_version);
     Serial.print("\n");
-
     return connected;
 }
+
 
 /**
  * @brief Disconnects from MySQL server by closing session
@@ -381,7 +406,7 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
         Field_t field;
         field.name = field_name;
         #if DEBUG
-            this->printf_n(64, "next offset %02X, field %s\n", offset, field.name.c_str());
+            this->printf_n(Serial, 64, "next offset %02X, field %s\n", offset, field.name.c_str());
         #endif
 
         //  Reallocate enougth memory and get the real name of field (NO alias)
@@ -419,7 +444,7 @@ bool MySQL::parse_textresultset(DataQuery_t* database)
                 char * value = (char*)malloc((str_size + 2) * sizeof(char));    // Allocate enougth memory
                 str_offset += 1 + readLenEncString(value, packet, str_offset);  // Get te text
                 #if DEBUG
-                    this->printf_n(128, "Field value: %s, length %d\n", str_offset, value, str_size);
+                    this->printf_n(Serial, 128, "Field value: %s, length %d\n", str_offset, value, str_size);
                 #endif
                 newRecord.record.push_back(value);
                 free(value);    // Free memory

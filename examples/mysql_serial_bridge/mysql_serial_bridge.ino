@@ -89,7 +89,7 @@ void loop() {
       // Check if the query has some records
       if (data.recordCount) {
         // Print formatted content of table
-        sql.printResult(data);
+        sql.printResult(data, Serial);
         Serial.print('\n');
       }
     }

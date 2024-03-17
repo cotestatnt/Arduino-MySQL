@@ -102,7 +102,8 @@ public:
         // Print a row separator
         for (Field_t field : fields) {
             memset(sep, 0, MAX_PRINT_LEN);
-            str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+            int len = max(field.size, field.name.length());
+            str_len = (len > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : len;
             this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
         }
         destination.print("+\n");
@@ -110,7 +111,8 @@ public:
         // Print fields name
         for (Field_t field : fields) {
             memset(sep, 0, MAX_PRINT_LEN);
-            str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+            int len = max(field.size, field.name.length());
+            str_len = (len > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : len;
             this->printf_n(destination, printfLen, "| %*s ", str_len, field.name.c_str());
         }
         destination.print("|\n");
@@ -118,7 +120,8 @@ public:
         // Print a row separator again
         for (Field_t field : fields) {
             memset(sep, 0, MAX_PRINT_LEN);
-            str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN :  field.size;
+            int len = max(field.size, field.name.length());
+            str_len = (len > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : len;
             this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
         }
         destination.print("+\n");
@@ -136,8 +139,8 @@ public:
         for (Record_t rec : database.records) {
             int i = 0;
             for (String value: rec.record) {
-                str_len = (database.fields.at(i).size > MAX_PRINT_LEN || database.fields.at(i).size == 0)
-                    ? MAX_PRINT_LEN : database.fields.at(i).size;
+                int len = max(database.fields.at(i).size, database.fields.at(i).name.length());                        
+                str_len = (len > MAX_PRINT_LEN || database.fields.at(i).size == 0)  ? MAX_PRINT_LEN : len;
 
                 if (!value.length())
                     value = " ";
@@ -154,7 +157,8 @@ public:
         // Print last row separator
         for (Field_t field : database.fields) {
             char sep[MAX_PRINT_LEN+3] = { 0 };
-            str_len = (field.size > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : field.size;
+            int len = max(field.size, field.name.length());
+            str_len = (len > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : len;
             this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
         }
         destination.print("+\n");
@@ -203,6 +207,8 @@ private:
     int  scramble_password(const char *password, uint8_t *pwd_hash);
     void flush_packet(void);
     void parse_error_packet(const MySQL_Packet *packet, uint16_t packet_len);
+
+    bool isValidIPAddress(const char* str);
 
     // Variadic function that will execute the query selected with passed parameters
     template <typename TDestination>
