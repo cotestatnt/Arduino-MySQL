@@ -66,7 +66,7 @@ public:
      * @return true Connection established and session opened
      * @return false Unable to connect or login
      */
-    bool connect(const char *user, const char *password, const char* db = nullptr);
+    bool connect(const char *user, const char *password, const char* db = nullptr, bool noInfo = false);
     /**
      * @brief Check is client is connected to MySQL server
      *

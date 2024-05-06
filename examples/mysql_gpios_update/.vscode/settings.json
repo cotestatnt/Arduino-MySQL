@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "memory": "cpp",
+        "istream": "cpp",
+        "functional": "cpp",
+        "array": "cpp",
+        "string_view": "cpp",
+        "string": "cpp",
+        "optional": "cpp",
+        "ostream": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "cmath": "cpp"
+    }
+}

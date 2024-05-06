@@ -61,7 +61,7 @@ bool MySQL::isValidIPAddress(const char* str) {
  * @return true Connection established and session opened
  * @return false Unable to connect or login
  */
-bool MySQL::connect(const char *user, const char *password, const char* db)
+bool MySQL::connect(const char *user, const char *password, const char* db, bool noInfo)
 {
     if (client == nullptr)
         return false;
@@ -70,12 +70,14 @@ bool MySQL::connect(const char *user, const char *password, const char* db)
     int retries = 5;
     // Retry up to MAX_CONNECT_ATTEMPTS times.
     while (retries--) {
-        connected = client->connect(mServerIP, 3306);
+        connected = client->connect(mServerIP, mPort);
         if (connected ) {
             break;
         }
         delay(100);
-        Serial.print(".");
+        if (!noInfo) {
+            Serial.print(".");
+        }
     }
 
     if (!connected )
@@ -93,9 +95,11 @@ bool MySQL::connect(const char *user, const char *password, const char* db)
     //Send authentification to server
     connected = (send_authentication_packet(user, password, db) > 0) ? true : false;
 
-    Serial.print(CONNECTED);
-    Serial.print(server_version);
-    Serial.print("\n");
+    if (!noInfo) {
+        Serial.print(CONNECTED);
+        Serial.print(server_version);
+        Serial.print("\n");
+    }
     return connected;
 }
 
