@@ -66,7 +66,7 @@ public:
      * @return true Connection established and session opened
      * @return false Unable to connect or login
      */
-    bool connect(const char *user, const char *password, const char* db = nullptr, bool noInfo = false);
+    bool connect(const char *user, const char *password, const char* db = nullptr);
     /**
      * @brief Check is client is connected to MySQL server
      *
@@ -102,7 +102,7 @@ public:
         // Print a row separator
         for (Field_t field : fields) {
             memset(sep, 0, MAX_PRINT_LEN);
-            int len = max(field.size, field.name.length());
+            int len = getMax(field.size, field.name.length());
             str_len = (len > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : len;
             this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
         }
@@ -111,7 +111,7 @@ public:
         // Print fields name
         for (Field_t field : fields) {
             memset(sep, 0, MAX_PRINT_LEN);
-            int len = max(field.size, field.name.length());
+            int len = getMax(field.size, field.name.length());
             str_len = (len > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : len;
             this->printf_n(destination, printfLen, "| %*s ", str_len, field.name.c_str());
         }
@@ -120,7 +120,7 @@ public:
         // Print a row separator again
         for (Field_t field : fields) {
             memset(sep, 0, MAX_PRINT_LEN);
-            int len = max(field.size, field.name.length());
+            int len = getMax(field.size, field.name.length());
             str_len = (len > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : len;
             this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
         }
@@ -139,7 +139,7 @@ public:
         for (Record_t rec : database.records) {
             int i = 0;
             for (String value: rec.record) {
-                int len = max(database.fields.at(i).size, database.fields.at(i).name.length());                        
+                int len = getMax(database.fields.at(i).size, database.fields.at(i).name.length());                        
                 str_len = (len > MAX_PRINT_LEN || database.fields.at(i).size == 0)  ? MAX_PRINT_LEN : len;
 
                 if (!value.length())
@@ -157,7 +157,7 @@ public:
         // Print last row separator
         for (Field_t field : database.fields) {
             char sep[MAX_PRINT_LEN+3] = { 0 };
-            int len = max(field.size, field.name.length());
+            int len = getMax(field.size, field.name.length());
             str_len = (len > MAX_PRINT_LEN || field.size == 0) ? MAX_PRINT_LEN : len;
             this->printf_n(destination, printfLen, "+%s", (char*)memset(sep, '-', str_len +2));
         }
@@ -177,6 +177,10 @@ private:
     Client *client = nullptr;
 
     char* server_version = nullptr;
+
+    uint32_t getMax(uint32_t a, uint32_t b) {
+        return (a > b) ? a : b;
+    }
 
     // Store last SQL state (usefull for error handling)
     char SQL_state[6];
