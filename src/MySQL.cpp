@@ -680,7 +680,7 @@ void MySQL::flush_packet()
     for (int i = 4; i < packet_len + 4; i++)
         tcp_socket_buffer[i] = data_rec[i];
 
-    delete data_rec;
+    free(data_rec);
 }
 
 
